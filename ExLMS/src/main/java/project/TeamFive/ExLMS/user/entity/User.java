@@ -65,38 +65,45 @@ public class User extends BaseEntity implements UserDetails {
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
     
+    @Transient
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         // Cấp quyền cho user dựa trên Enum Role (VD: ROLE_STUDENT)
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
+    @Transient
     @Override
     public String getPassword() {
         return passwordHash; // Trả về mật khẩu đã băm
     }
 
+    @Transient
     @Override
     public String getUsername() {
         return email; // Dùng email làm tài khoản đăng nhập
     }
 
+    @Transient
     @Override
     public boolean isAccountNonExpired() {
         return true;
     }
 
+    @Transient
     @Override
     public boolean isAccountNonLocked() {
         // Mở khóa nếu cột lockedUntil bị null hoặc thời gian khóa đã qua
         return lockedUntil == null || lockedUntil.isBefore(LocalDateTime.now());
     }
 
+    @Transient
     @Override
     public boolean isCredentialsNonExpired() {
         return true;
     }
 
+    @Transient
     @Override
     public boolean isEnabled() {
         return true;

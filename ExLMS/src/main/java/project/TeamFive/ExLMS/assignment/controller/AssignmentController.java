@@ -12,7 +12,7 @@ import project.TeamFive.ExLMS.user.entity.User;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 public class AssignmentController {
 
