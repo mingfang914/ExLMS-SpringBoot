@@ -45,6 +45,7 @@ be_files.txt
 fe.txt
 fe_files.txt
 srs.txt
+ReadDocx.java
 
 # Bỏ qua các tệp sao lưu/dump cơ sở dữ liệu (để tránh lộ dữ liệu nhạy cảm)
 lms_schema_mysql_v2.sql
