@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react'
 import { Box, Typography, CircularProgress } from '@mui/material'
 
-const JitsiMeeting = ({ roomName, displayName, email, onMeetingEnd }) => {
+const JitsiMeeting = ({ roomName, displayName, email, isInstructor = false, onMeetingEnd }) => {
   const jitsiContainerRef = useRef(null)
 
   useEffect(() => {
@@ -9,6 +9,22 @@ const JitsiMeeting = ({ roomName, displayName, email, onMeetingEnd }) => {
       console.error('Jitsi Meet External API not loaded')
       return
     }
+
+    const instructorButtons = [
+      'microphone', 'camera', 'closedcaptions', 'desktop', 'fullscreen',
+      'fodeviceselection', 'hangup', 'profile', 'recording',
+      'livestreaming', 'etherpad', 'sharedvideo', 'settings', 'raisehand',
+      'videoquality', 'filmstrip', 'invite', 'feedback', 'stats', 'shortcuts',
+      'tileview', 'videobackgroundblur', 'download', 'help', 'mute-everyone',
+      'security', 'chat'
+    ]
+
+    const memberButtons = [
+      'microphone', 'camera', 'closedcaptions', 'fullscreen',
+      'fodeviceselection', 'hangup', 'profile', 'raisehand',
+      'videoquality', 'filmstrip', 'feedback', 'stats', 'shortcuts',
+      'tileview', 'videobackgroundblur', 'download', 'help', 'chat'
+    ]
 
     const domain = 'meet.jit.si'
     const options = {
@@ -21,15 +37,7 @@ const JitsiMeeting = ({ roomName, displayName, email, onMeetingEnd }) => {
         email: email
       },
       interfaceConfigOverwrite: {
-        // Customize UI if needed
-        TOOLBAR_BUTTONS: [
-          'microphone', 'camera', 'closedcaptions', 'desktop', 'fullscreen',
-          'fodeviceselection', 'hangup', 'profile', 'chat', 'recording',
-          'livestreaming', 'etherpad', 'sharedvideo', 'settings', 'raisehand',
-          'videoquality', 'filmstrip', 'invite', 'feedback', 'stats', 'shortcuts',
-          'tileview', 'videobackgroundblur', 'download', 'help', 'mute-everyone',
-          'security'
-        ],
+        TOOLBAR_BUTTONS: isInstructor ? instructorButtons : memberButtons,
       },
       configOverwrite: {
         startWithAudioMuted: true,

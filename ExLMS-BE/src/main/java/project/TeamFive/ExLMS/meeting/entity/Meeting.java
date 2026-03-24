@@ -31,6 +31,7 @@ public class Meeting extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(name = "meeting_type", nullable = false)
     private MeetingType meetingType = MeetingType.VIDEO_CONFERENCE;
@@ -50,9 +51,11 @@ public class Meeting extends BaseEntity {
     @Column(name = "start_at", nullable = false)
     private LocalDateTime startAt;
 
+    @Builder.Default
     @Column(name = "duration_minutes", nullable = false)
     private int durationMinutes = 60;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private MeetingStatus status = MeetingStatus.SCHEDULED;

@@ -13,8 +13,11 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token')
-    if (token) {
+    if (token && !config.headers.Authorization) {
       config.headers.Authorization = `Bearer ${token}`
+      console.log('API Request: Added token to', config.url)
+    } else if (config.headers.Authorization) {
+      console.log('API Request: Token already present for', config.url)
     }
     return config
   },
@@ -30,31 +33,45 @@ api.interceptors.response.use(
     const originalRequest = error.config
     
     // Check if error is 401/403 and we haven't retried yet
-    if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true
       
       const refreshToken = localStorage.getItem('refreshToken')
       if (refreshToken) {
         try {
-          // Using axios directly to avoid interceptor loop
-          const res = await axios.post(`/api/auth/refresh-token?token=${refreshToken}`)
+          console.log('Refreshing token...');
+          // Using axios instance directly to respect baseURL and proxy
+          const res = await axios({
+            method: 'post',
+            url: '/api/auth/refresh-token',
+            params: { token: refreshToken }
+          })
           
           if (res.data && res.data.token) {
+            console.log('Token refreshed successfully');
             localStorage.setItem('token', res.data.token)
             if (res.data.refreshToken) {
               localStorage.setItem('refreshToken', res.data.refreshToken)
             }
-            originalRequest.headers.Authorization = `Bearer ${res.data.token}`
+            // Clear Authorization header to let the Request Interceptor add the new one
+            if (originalRequest.headers.delete) {
+              originalRequest.headers.delete('Authorization')
+            } else {
+              delete originalRequest.headers['Authorization']
+            }
+            
+            // Retry the original request using the api instance after a short delay
+            console.log('Retrying original request with new token:', originalRequest.url);
+            await new Promise(resolve => setTimeout(resolve, 100));
             return api(originalRequest)
           }
         } catch (refreshErr) {
-          // Refresh failed
+          console.error('Refresh token failed:', refreshErr);
+          store.dispatch(logout())
+          window.location.href = '/login'
+          return Promise.reject(refreshErr)
         }
       }
-      
-      // Clear token and redirect to login if unauthorized and refresh failed
-      store.dispatch(logout())
-      window.location.href = '/login'
     }
     return Promise.reject(error)
   }

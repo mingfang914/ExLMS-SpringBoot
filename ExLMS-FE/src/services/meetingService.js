@@ -18,7 +18,7 @@ const meetingService = {
   },
 
   getMeeting: async (id) => {
-    const response = await api.get(`${API_URL}/${id}`);
+    const response = await api.get(`${API_URL}/${id?.trim()}`);
     return response.data;
   },
 
@@ -45,7 +45,7 @@ const meetingService = {
   },
 
   addQuestion: async (id, questionData) => {
-    const response = await api.post(`${API_URL}/${id}/questions`, questionData);
+    const response = await api.post(`${API_URL}/${id?.trim()}/questions`, questionData);
     return response.data;
   },
 
@@ -54,12 +54,12 @@ const meetingService = {
   },
 
   getQuestions: async (id) => {
-    const response = await api.get(`${API_URL}/${id}/questions`);
+    const response = await api.get(`${API_URL}/${id?.trim()}/questions`);
     return response.data;
   },
 
   createPoll: async (id, pollData) => {
-    const response = await api.post(`${API_URL}/${id}/polls`, pollData);
+    const response = await api.post(`${API_URL}/${id?.trim()}/polls`, pollData);
     return response.data;
   },
 

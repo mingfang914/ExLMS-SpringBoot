@@ -1,7 +1,10 @@
 package project.TeamFive.ExLMS.meeting.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.transaction.annotation.Transactional;
 import project.TeamFive.ExLMS.group.entity.StudyGroup;
 import project.TeamFive.ExLMS.user.entity.User;
@@ -23,6 +26,7 @@ import project.TeamFive.ExLMS.meeting.repository.*;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -39,13 +43,25 @@ public class MeetingService {
     private final MeetingPollRepository pollRepository;
     private final MeetingPollOptionRepository pollOptionRepository;
     private final MeetingPollVoteRepository pollVoteRepository;
+    private final SimpMessagingTemplate messagingTemplate;
+
+    private void broadcast(UUID meetingId, String type, Object data) {
+        String destination = "/topic/meeting/" + meetingId;
+        java.util.Map<String, Object> payload = new java.util.HashMap<>();
+        payload.put("type", type);
+        payload.put("data", data);
+        messagingTemplate.convertAndSend(destination, payload);
+    }
 
     private void requireInstructorRole(StudyGroup group, User user) {
+        if (user == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Vui lòng đăng nhập!");
+        }
         GroupMember member = groupMemberRepository.findByGroup_IdAndUser_Id(group.getId(), user.getId())
-                .orElseThrow(() -> new RuntimeException("Bạn không phải là thành viên của nhóm này!"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Bạn không phải là thành viên của nhóm này!"));
 
         if (!"OWNER".equals(member.getRole()) && !"EDITOR".equals(member.getRole())) {
-            throw new RuntimeException(
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Truy cập bị từ chối: Chỉ Chủ nhóm hoặc Biên tập viên mới có quyền quản lý Buổi học trực tuyến!");
         }
     }
@@ -154,6 +170,7 @@ public class MeetingService {
 
     @Transactional
     public void startMeeting(UUID id, User instructor) {
+        if (instructor == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         Meeting meeting = meetingRepository.findById(id).orElseThrow();
         requireInstructorRole(meeting.getGroup(), instructor);
 
@@ -169,18 +186,22 @@ public class MeetingService {
 
         meeting.setStatus(Meeting.MeetingStatus.LIVE);
         meetingRepository.save(meeting);
+        broadcast(id, "MEETING_STARTED", null);
     }
 
     @Transactional
     public void endMeeting(UUID id, User instructor) {
+        if (instructor == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         Meeting meeting = meetingRepository.findById(id).orElseThrow();
         requireInstructorRole(meeting.getGroup(), instructor);
         meeting.setStatus(Meeting.MeetingStatus.ENDED);
         meetingRepository.save(meeting);
+        broadcast(id, "MEETING_ENDED", null);
     }
 
     @Transactional
     public void recordAttendance(UUID meetingId, User user, boolean joining) {
+        if (user == null) return; // Silent return for attendance if no user
         Meeting meeting = meetingRepository.findById(meetingId).orElseThrow();
         
         MeetingAttendance attendance = attendanceRepository.findByMeeting_IdAndUser_Id(meetingId, user.getId())
@@ -201,19 +222,30 @@ public class MeetingService {
             }
         }
         attendanceRepository.save(attendance);
+        broadcast(meetingId, joining ? "MEMBER_JOINED" : "MEMBER_LEFT", Map.of(
+            "userId", user.getId().toString(),
+            "fullName", user.getFullName(),
+            "joining", joining
+        ));
     }
 
     @Transactional
     public QuestionResponseDTO addQuestion(UUID meetingId, QuestionRequest request, User user) {
-        Meeting meeting = meetingRepository.findById(meetingId).orElseThrow();
+        if (user == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        System.out.println("Adding question for meeting: " + meetingId);
+        Meeting meeting = meetingRepository.findById(meetingId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Meeting not found: " + meetingId));
+        
         MeetingQuestion question = MeetingQuestion.builder()
                 .meeting(meeting)
                 .user(user)
                 .content(request.getContent())
-                .isPrivate(request.isPrivate())
+                .isPrivate(request.getIsPrivate())
                 .answered(false)
                 .build();
-        return mapToQuestionDTO(questionRepository.save(question));
+        QuestionResponseDTO saved = mapToQuestionDTO(questionRepository.save(question));
+        broadcast(meetingId, "QUESTION_ADDED", saved);
+        return saved;
     }
 
     @Transactional
@@ -224,16 +256,21 @@ public class MeetingService {
         question.setAnsweredBy(instructor);
         question.setAnswered(true);
         questionRepository.save(question);
+        broadcast(question.getMeeting().getId(), "QUESTION_ANSWERED", mapToQuestionDTO(question));
     }
 
     @Transactional(readOnly = true)
     public List<QuestionResponseDTO> getQuestions(UUID meetingId) {
+        System.out.println("Fetching questions for meeting: " + meetingId);
         return questionRepository.findByMeeting_IdOrderByCreatedAtAsc(meetingId).stream()
                 .map(this::mapToQuestionDTO).collect(Collectors.toList());
     }
 
     @Transactional
     public PollResponseDTO createPoll(UUID meetingId, CreatePollRequest request, User instructor) {
+        if (instructor == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Vui lòng đăng nhập!");
+        }
         Meeting meeting = meetingRepository.findById(meetingId).orElseThrow();
         requireInstructorRole(meeting.getGroup(), instructor);
 
@@ -252,7 +289,9 @@ public class MeetingService {
                     .build();
             pollOptionRepository.save(opt);
         }
-        return getPollDetailed(poll.getId(), null);
+        PollResponseDTO detailed = getPollDetailed(poll.getId(), null);
+        broadcast(meetingId, "POLL_CREATED", detailed);
+        return detailed;
     }
 
     @Transactional
@@ -275,6 +314,7 @@ public class MeetingService {
 
         option.setVoteCount(option.getVoteCount() + 1);
         pollOptionRepository.save(option);
+        broadcast(poll.getMeeting().getId(), "POLL_UPDATED", getPollDetailed(pollId, user.getId()));
     }
 
     @Transactional(readOnly = true)
@@ -341,13 +381,15 @@ public class MeetingService {
     @Transactional(readOnly = true)
     public MeetingResponseDTO getMeetingById(UUID id, User user) {
         Meeting meeting = meetingRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Meeting not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Không tìm thấy buổi họp"));
         
         MeetingResponseDTO dto = MeetingResponseDTO.fromEntity(meeting);
         
-        // Find user's role in this group
-        groupMemberRepository.findByGroup_IdAndUser_Id(meeting.getGroup().getId(), user.getId())
-                .ifPresent(member -> dto.setCurrentUserRole(member.getRole()));
+        if (user != null) {
+            // Find user's role in this group
+            groupMemberRepository.findByGroup_IdAndUser_Id(meeting.getGroup().getId(), user.getId())
+                    .ifPresent(member -> dto.setCurrentUserRole(member.getRole()));
+        }
                 
         return dto;
     }

@@ -23,9 +23,11 @@ public class MeetingPoll extends BaseEntity {
     @Column(columnDefinition = "TEXT", nullable = false)
     private String question;
 
+    @Builder.Default
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
 
+    @Builder.Default
     @OneToMany(mappedBy = "poll", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<MeetingPollOption> options = new ArrayList<>();
 }
