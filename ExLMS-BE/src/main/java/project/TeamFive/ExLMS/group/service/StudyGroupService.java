@@ -34,29 +34,41 @@ public class StudyGroupService {
     private final GroupJoinRequestRepository groupJoinRequestRepository;
     private final FileService fileService;
 
-    // Dùng Transactional để đảm bảo: Nếu lưu Nhóm thành công mà lưu Thành viên lỗi, thì hủy (rollback) toàn bộ, không tạo ra rác trong DB
-    @Transactional 
+    // Dùng Transactional để đảm bảo: Nếu lưu Nhóm thành công mà lưu Thành viên lỗi,
+    // thì hủy (rollback) toàn bộ, không tạo ra rác trong DB
+    @Transactional
     public String createGroup(CreateGroupRequest request) {
-        
+
         // 1. Lấy thông tin người tạo nhóm từ JWT Token
         User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        // Ràng buộc: Chỉ Giảng viên hoặc Admin mới được tạo nhóm
+        if (!"INSTRUCTOR".equals(currentUser.getRole().name()) && !"ADMIN".equals(currentUser.getRole().name())) {
+            throw new RuntimeException("Chỉ Giảng viên hoặc Quản trị viên mới có quyền tạo Nhóm học tập!");
+        }
 
         // 2. Tạo mã mời
         String inviteCode = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
 
         // 3. Khởi tạo đối tượng Nhóm
+        String coverKey = request.getCoverKey();
+        if (coverKey == null || coverKey.trim().isEmpty()) {
+            coverKey = "DefaultGroupCover.png";
+        }
+
         StudyGroup newGroup = StudyGroup.builder()
                 .owner(currentUser)
                 .name(request.getName())
                 .description(request.getDescription())
-                .coverKey(request.getCoverKey()) // Cần thêm field này vào CreateGroupRequest
+                .coverKey(coverKey)
                 .visibility(request.getVisibility() != null ? request.getVisibility() : "PUBLIC")
                 .category(request.getCategory())
                 .inviteCode(inviteCode)
                 .maxMembers(100)
-                .memberCount(1)
+                .memberCount(0)
                 .language("vi")
                 .status("ACTIVE")
+                .autoApprove(request.getAutoApprove() != null ? request.getAutoApprove() : false)
                 .build();
 
         // 4. Lưu Nhóm xuống Database (Lúc này newGroup đã được cấp ID nhị phân)
@@ -66,7 +78,7 @@ public class StudyGroupService {
         GroupMember ownerMember = GroupMember.builder()
                 .group(newGroup)
                 .user(currentUser)
-                .role("OWNER") 
+                .role("OWNER")
                 .status("ACTIVE")
                 .approvedBy(currentUser) // Chủ nhóm tự duyệt chính mình
                 .build();
@@ -79,21 +91,53 @@ public class StudyGroupService {
 
     @Transactional(readOnly = true)
     public List<GroupResponse> getAllPublicGroups() {
+        User currentUser = null;
+        try {
+            Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (principal instanceof User) currentUser = (User) principal;
+        } catch (Exception ignored) {}
+
+        final User cu = currentUser;
         return studyGroupRepository.findAll().stream()
                 .filter(group -> "ACTIVE".equals(group.getStatus()) && "PUBLIC".equals(group.getVisibility()))
-                .map(this::mapToGroupResponse)
+                .map(group -> mapToGroupResponse(group, cu))
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    public List<GroupResponse> getMyGroups() {
+        User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        // Find all group_member rows for this user using native SQL UNHEX to handle BINARY(16)
+        List<GroupMember> myMemberships = groupMemberRepository.findAllByUserId(currentUser.getId().toString());
+
+        return myMemberships.stream()
+                .map(gm -> gm.getGroup())
+                .filter(group -> "ACTIVE".equals(group.getStatus())) // Include both PUBLIC and PRIVATE
+                .distinct()
+                .map(group -> mapToGroupResponse(group, currentUser))
                 .collect(Collectors.toList());
     }
 
     // Lấy chi tiết 1 nhóm cụ thể
+    @Transactional(readOnly = true)
     public GroupResponse getGroupById(UUID groupId) {
         StudyGroup group = studyGroupRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy nhóm học tập này!"));
-        return mapToGroupResponse(group);
+        User currentUser = null;
+        try {
+            Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (principal instanceof User) {
+                currentUser = (User) principal;
+            }
+        } catch (Exception e) {
+        }
+
+        return mapToGroupResponse(group, currentUser);
     }
 
     // ==================== UPDATE (Cập nhật thông tin nhóm) ====================
-    
+
     @Transactional
     public GroupResponse updateGroup(UUID groupId, UpdateGroupRequest request) {
         StudyGroup group = studyGroupRepository.findById(groupId)
@@ -107,17 +151,23 @@ public class StudyGroupService {
         }
 
         // Cập nhật các trường dữ liệu
-        if (request.getName() != null) group.setName(request.getName());
-        if (request.getDescription() != null) group.setDescription(request.getDescription());
-        if (request.getVisibility() != null) group.setVisibility(request.getVisibility());
-        if (request.getCategory() != null) group.setCategory(request.getCategory());
+        if (request.getName() != null)
+            group.setName(request.getName());
+        if (request.getDescription() != null)
+            group.setDescription(request.getDescription());
+        if (request.getVisibility() != null)
+            group.setVisibility(request.getVisibility());
+        if (request.getCategory() != null)
+            group.setCategory(request.getCategory());
+        if (request.getAutoApprove() != null)
+            group.setAutoApprove(request.getAutoApprove());
 
         studyGroupRepository.save(group);
-        return mapToGroupResponse(group);
+        return mapToGroupResponse(group, currentUser);
     }
 
     // ==================== DELETE (Xóa nhóm - Xóa mềm) ====================
-    
+
     @Transactional
     public String deleteGroup(UUID groupId) {
         StudyGroup group = studyGroupRepository.findById(groupId)
@@ -130,7 +180,8 @@ public class StudyGroupService {
             throw new RuntimeException("Chỉ có Chủ nhóm mới có quyền xóa nhóm!");
         }
 
-        // Xóa Mềm (Soft Delete): Không gọi lệnh .delete(), chỉ đổi status để giữ lại dữ liệu lịch sử
+        // Xóa Mềm (Soft Delete): Không gọi lệnh .delete(), chỉ đổi status để giữ lại dữ
+        // liệu lịch sử
         group.setStatus("DELETED");
         studyGroupRepository.save(group);
 
@@ -138,17 +189,40 @@ public class StudyGroupService {
     }
 
     // --- Hàm phụ trợ: Chuyển từ Entity sang DTO ---
-    private GroupResponse mapToGroupResponse(StudyGroup group) {
+    private GroupResponse mapToGroupResponse(StudyGroup group, User currentUser) {
+        String coverUrl = null;
+        if (group.getCoverKey() != null && !group.getCoverKey().trim().isEmpty()) {
+            try {
+                coverUrl = fileService.getPresignedUrl(group.getCoverKey());
+            } catch (Exception e) {
+                System.out.println("Failed to get presigned url for coverKey: " + group.getCoverKey());
+            }
+        }
+
+        String currentUserRole = null;
+        boolean isJoined = false;
+
+        if (currentUser != null) {
+            java.util.Optional<GroupMember> memberOpt = groupMemberRepository.findByGroupAndUser(group, currentUser);
+            if (memberOpt.isPresent()) {
+                isJoined = true;
+                currentUserRole = memberOpt.get().getRole();
+            }
+        }
+
         return GroupResponse.builder()
                 .id(group.getId())
                 .name(group.getName())
                 .description(group.getDescription())
-                .ownerName(group.getOwner().getFullName())
+                .ownerName(group.getOwner() != null ? group.getOwner().getFullName() : "Unknown")
                 .visibility(group.getVisibility())
                 .memberCount(group.getMemberCount())
                 .category(group.getCategory())
                 .status(group.getStatus())
-                .coverUrl(fileService.getPresignedUrl(group.getCoverKey()))
+                .coverUrl(coverUrl)
+                .currentUserRole(currentUserRole)
+                .isJoined(isJoined)
+                .inviteCode(("OWNER".equals(currentUserRole) || "EDITOR".equals(currentUserRole)) ? group.getInviteCode() : null)
                 .build();
     }
 
@@ -176,26 +250,40 @@ public class StudyGroupService {
             throw new RuntimeException("Bạn đã là thành viên của nhóm này rồi!");
         }
 
-        // 6. Tạo thẻ thành viên mới
-        GroupMember newMember = GroupMember.builder()
-                .group(group)
-                .user(currentUser)
-                .role("MEMBER") // Mặc định vào bằng mã mời thì làm Member
-                .status("ACTIVE")
-                // Không cần gán joinedAt vì @PrePersist đã lo
-                // Không cần approvedBy vì vào bằng mã mời xem như duyệt tự động
-                .build();
+        // 6. Kiểm tra xem có Request PENDING nào chưa
+        if (groupJoinRequestRepository.existsByGroupAndUserAndStatus(group, currentUser, "PENDING")) {
+            throw new RuntimeException("Bạn đã gửi yêu cầu trước đó rồi, vui lòng chờ duyệt!");
+        }
 
-        // 7. Lưu xuống DB (Lúc này Trigger của MySQL sẽ tự động chạy để cộng member_count)
-        groupMemberRepository.save(newMember);
-
-        return "Chúc mừng! Bạn đã gia nhập thành công nhóm: " + group.getName();
+        // 7. Xử lý logic Tham gia ngay (Auto Approve)
+        if (group.isAutoApprove()) {
+            GroupMember newMember = GroupMember.builder()
+                    .group(group)
+                    .user(currentUser)
+                    .role("MEMBER") 
+                    .status("ACTIVE")
+                    .build();
+            groupMemberRepository.save(newMember);
+            return "Chúc mừng! Bạn đã gia nhập thành công nhóm: " + group.getName();
+        } else {
+            // Nhóm Private hoặc cấu hình duyệt thủ công -> Phải đợi Owner/Editor duyệt
+            GroupJoinRequest joinRequest = GroupJoinRequest.builder()
+                    .group(group)
+                    .user(currentUser)
+                    .message("Sử dụng mã mời: " + inviteCode)
+                    .status("PENDING")
+                    .build();
+            groupJoinRequestRepository.save(joinRequest);
+            return "Mã mời hợp lệ! Yêu cầu tham gia của bạn đang chờ phê duyệt từ Ban quản trị nhóm.";
+        }
     }
-    
+
     @Transactional(readOnly = true)
     public List<GroupMemberDetailView> getGroupMembers(UUID groupId) {
-        // Có thể thêm logic kiểm tra: Chỉ những ai là thành viên nhóm mới được xem danh sách này
-        // Hiện tại ta lấy trực tiếp từ View thông qua hàm bin_to_uuid16 mà DB đã cung cấp
+        // Có thể thêm logic kiểm tra: Chỉ những ai là thành viên nhóm mới được xem danh
+        // sách này
+        // Hiện tại ta lấy trực tiếp từ View thông qua hàm bin_to_uuid16 mà DB đã cung
+        // cấp
         return groupMemberDetailViewRepository.findByGroupId(groupId.toString());
     }
 
@@ -221,14 +309,26 @@ public class StudyGroupService {
             throw new RuntimeException("Bạn đã gửi yêu cầu trước đó rồi, vui lòng chờ duyệt!");
         }
 
-        GroupJoinRequest request = GroupJoinRequest.builder()
+        // Kiểm tra tính năng Auto-Approve
+        if (group.isAutoApprove()) {
+            GroupMember newMember = GroupMember.builder()
+                    .group(group)
+                    .user(currentUser)
+                    .role("MEMBER")
+                    .status("ACTIVE")
+                    .build();
+            groupMemberRepository.save(newMember);
+            return "Gia nhập thành công do nhóm đang bật chế độ 'Tham gia ngay'!";
+        }
+
+        GroupJoinRequest req = GroupJoinRequest.builder()
                 .group(group)
                 .user(currentUser)
                 .message(message)
                 .status("PENDING")
                 .build();
-        
-        groupJoinRequestRepository.save(request);
+
+        groupJoinRequestRepository.save(req);
         return "Đã gửi yêu cầu tham gia thành công. Vui lòng chờ Giảng viên phê duyệt!";
     }
 
@@ -241,8 +341,9 @@ public class StudyGroupService {
 
         StudyGroup group = request.getGroup();
 
-        // Kiểm tra quyền: Người đang bấm duyệt có phải là Owner hoặc Editor của nhóm này không?
-        GroupMember currentMember = groupMemberRepository.findByGroupAndUser(group, currentUser)
+        // Kiểm tra quyền: Người đang bấm duyệt có phải là Owner hoặc Editor của nhóm
+        // này không?
+        GroupMember currentMember = groupMemberRepository.findByGroup_IdAndUser_Id(group.getId(), currentUser.getId())
                 .orElseThrow(() -> new RuntimeException("Bạn không phải là thành viên của nhóm này!"));
 
         if (!"OWNER".equals(currentMember.getRole()) && !"EDITOR".equals(currentMember.getRole())) {
@@ -275,30 +376,167 @@ public class StudyGroupService {
         return "Đã TỪ CHỐI yêu cầu tham gia.";
     }
 
-    // [READ] Lấy danh sách các yêu cầu đang chờ duyệt của nhóm
+    // 3. Owner/Editor lấy danh sách yêu cầu đang chờ duyệt
     @Transactional(readOnly = true)
-    public List<java.util.Map<String, Object>> getPendingJoinRequests(UUID groupId) {
+    public List<project.TeamFive.ExLMS.group.dto.response.JoinRequestResponse> getPendingJoinRequests(UUID groupId) {
         User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        StudyGroup group = studyGroupRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhóm này!"));
+
+        // Kiểm tra quyền
+        GroupMember currentMember = groupMemberRepository.findByGroupIdAndUserId(group.getId().toString(), currentUser.getId().toString())
+                .orElseThrow(() -> new RuntimeException("Bạn không phải là thành viên của nhóm này!"));
+
+        if (!"OWNER".equals(currentMember.getRole()) && !"EDITOR".equals(currentMember.getRole())) {
+            throw new RuntimeException("Chỉ Chủ nhóm hoặc Biên tập viên mới được xem danh sách yêu cầu!");
+        }
+
+        return groupJoinRequestRepository.findPendingByGroupId(groupId.toString(), "PENDING")
+                .stream()
+                .map(req -> project.TeamFive.ExLMS.group.dto.response.JoinRequestResponse.builder()
+                        .requestId(req.getId())
+                        .studentName(req.getUser().getFullName())
+                        .studentEmail(req.getUser().getEmail())
+                        .message(req.getMessage())
+                        .status(req.getStatus())
+                        .createdAt(req.getCreatedAt())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    // ==================== MEMBER MANAGEMENT (Owner / Editor) ====================
+
+    // 1. Thăng/giáng cấp thành viên (Owner only)
+    @Transactional
+    public String changeMemberRole(UUID groupId, UUID targetUserId, String newRole) {
+        if (!newRole.equals("EDITOR") && !newRole.equals("MEMBER")) {
+            throw new RuntimeException("Quyền mới không hợp lệ! Chỉ nhận EDITOR hoặc MEMBER.");
+        }
+
         StudyGroup group = studyGroupRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy nhóm!"));
 
-        // BẢO MẬT: Chỉ Owner hoặc Editor mới được xem danh sách này
-        GroupMember currentMember = groupMemberRepository.findByGroupAndUser(group, currentUser)
-                .orElseThrow(() -> new RuntimeException("Bạn không phải thành viên nhóm!"));
-        
-        if (!"OWNER".equals(currentMember.getRole()) && !"EDITOR".equals(currentMember.getRole())) {
-            throw new RuntimeException("Chỉ Chủ nhóm hoặc BTV mới có quyền xem yêu cầu!");
+        User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        // Kiểm tra Owner
+        if (!group.getOwner().getId().equals(currentUser.getId())) {
+            throw new RuntimeException("Chỉ Chủ nhóm mới có quyền thay đổi vai trò thành viên!");
         }
 
-        // Lấy danh sách PENDING và map sang dạng dữ liệu đơn giản trả về
-        return groupJoinRequestRepository.findByGroup_IdAndStatus(groupId, "PENDING").stream()
-                .map(req -> java.util.Map.<String, Object>of( 
-                        "requestId", req.getId(),
-                        "studentName", req.getUser().getFullName(),
-                        "studentEmail", req.getUser().getEmail(),
-                        "message", req.getMessage() != null ? req.getMessage() : "",
-                        "createdAt", req.getCreatedAt()
-                ))
-                .collect(Collectors.toList());
+        if (targetUserId.equals(currentUser.getId())) {
+            throw new RuntimeException("Không thể tự đổi quyền của chính mình!");
+        }
+
+        GroupMember targetMember = groupMemberRepository.findByGroup_IdAndUser_Id(groupId, targetUserId)
+                .orElseThrow(() -> new RuntimeException("Người dùng này không phải là thành viên nhóm!"));
+
+        if ("OWNER".equals(targetMember.getRole())) {
+            throw new RuntimeException("Không thể giáng cấp Chủ nhóm!");
+        }
+
+        targetMember.setRole(newRole);
+        groupMemberRepository.save(targetMember);
+        return "Đã cập nhật quyền thành công!";
+    }
+
+    // 2. Xóa thành viên
+    @Transactional
+    public String removeMember(UUID groupId, UUID targetUserId) {
+        StudyGroup group = studyGroupRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhóm!"));
+
+        User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        if (targetUserId.equals(currentUser.getId())) {
+            throw new RuntimeException("Không thể tự xóa chính mình bằng chức năng này! Hãy dùng tính năng Rời nhóm.");
+        }
+
+        GroupMember currentMember = groupMemberRepository.findByGroup_IdAndUser_Id(group.getId(), currentUser.getId())
+                .orElseThrow(() -> new RuntimeException("Bạn không phải thành viên nhóm!"));
+
+        GroupMember targetMember = groupMemberRepository.findByGroup_IdAndUser_Id(groupId, targetUserId)
+                .orElseThrow(() -> new RuntimeException("Người dùng này không phải là thành viên nhóm!"));
+
+        if ("OWNER".equals(targetMember.getRole())) {
+            throw new RuntimeException("Không thể xóa Chủ nhóm khỏi nhóm!!");
+        }
+
+        if ("OWNER".equals(currentMember.getRole())) {
+            // Owner có quyền xóa bất cứ ai
+            groupMemberRepository.delete(targetMember);
+        } else if ("EDITOR".equals(currentMember.getRole())) {
+            // Editor chỉ xóa được Member
+            if (!"MEMBER".equals(targetMember.getRole())) {
+                throw new RuntimeException("Biên tập viên không có quyền xóa Biên tập viên khác hoặc Chủ nhóm!");
+            }
+            groupMemberRepository.delete(targetMember);
+        } else {
+            throw new RuntimeException("Thành viên thường không có quyền xóa người khác!");
+        }
+
+        return "Đã xóa thành viên khỏi nhóm thành công!";
+    }
+
+    // 3. Chuyển nhượng Owner
+    @Transactional
+    public String transferOwnership(UUID groupId, UUID newOwnerId) {
+        StudyGroup group = studyGroupRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhóm!"));
+
+        User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        if (!group.getOwner().getId().equals(currentUser.getId())) {
+            throw new RuntimeException("Chỉ Chủ nhóm hiện tại mới có quyền chuyển nhượng!");
+        }
+
+        if (newOwnerId.equals(currentUser.getId())) {
+            throw new RuntimeException("Bạn đã là Chủ nhóm rồi!");
+        }
+
+        GroupMember currentMember = groupMemberRepository
+                .findByGroup_IdAndUser_Id(group.getId(), currentUser.getId())
+                .orElseThrow(() -> new RuntimeException("Lỗi dữ liệu: Không tìm thấy thẻ thành viên Owner."));
+
+        GroupMember targetMember = groupMemberRepository
+                .findByGroup_IdAndUser_Id(groupId, newOwnerId)
+                .orElseThrow(() -> new RuntimeException("Người được chỉ định không phải là thành viên nhóm!"));
+
+        // 1. Thăng target lên Owner
+        targetMember.setRole("OWNER");
+        groupMemberRepository.save(targetMember);
+
+        // 2. Giáng current xuống Editor
+        currentMember.setRole("EDITOR");
+        groupMemberRepository.save(currentMember);
+
+        // 3. Đổi owner của group entity
+        group.setOwner(targetMember.getUser());
+        studyGroupRepository.save(group);
+
+        return "Đã chuyển nhượng quyền Chủ nhóm thành công!";
+    }
+
+
+    // Tái tạo lại mã mời (Regenerate Invite Code)
+    @Transactional
+    public String regenerateInviteCode(UUID groupId) {
+        StudyGroup group = studyGroupRepository.findById(groupId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhóm!"));
+
+        User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        // BẢO MẬT: Chỉ Owner hoặc Editor mới được tạo lại mã mời
+        GroupMember currentMember = groupMemberRepository.findByGroupAndUser(group, currentUser)
+                .orElseThrow(() -> new RuntimeException("Bạn không phải thành viên nhóm!"));
+
+        if (!"OWNER".equals(currentMember.getRole()) && !"EDITOR".equals(currentMember.getRole())) {
+            throw new RuntimeException("Chỉ Chủ nhóm hoặc BTV mới có quyền thay đổi mã mời!");
+        }
+
+        String newCode = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        group.setInviteCode(newCode);
+        studyGroupRepository.save(group);
+
+        return newCode;
     }
 }

@@ -16,4 +16,8 @@ public class GroupResponse {
     private String category;
     private String status;
     private String coverUrl;
+    private String currentUserRole;
+    private String inviteCode;
+    @com.fasterxml.jackson.annotation.JsonProperty("isJoined")
+    private boolean isJoined;
 }

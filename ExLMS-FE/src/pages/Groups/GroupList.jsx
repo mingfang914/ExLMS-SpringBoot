@@ -37,11 +37,18 @@ const GroupList = () => {
   const [activeTab, setActiveTab] = useState(0) // 0: All, 1: My Groups (Optional)
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' })
 
-  const fetchGroups = async () => {
+  const fetchGroups = async (tab = activeTab) => {
     setLoading(true)
     setError(null)
     try {
-      const data = await groupService.getAllPublicGroups()
+      let data
+      if (tab === 1) {
+        // My Groups: fetch all groups the user has joined (includes private ones)
+        data = await groupService.getMyGroups()
+      } else {
+        // All Groups: public only
+        data = await groupService.getAllPublicGroups()
+      }
       setGroups(data)
     } catch (err) {
       setError('Failed to fetch groups. Please try again later.')
@@ -51,8 +58,8 @@ const GroupList = () => {
   }
 
   useEffect(() => {
-    fetchGroups()
-  }, [])
+    fetchGroups(activeTab)
+  }, [activeTab])
 
   const handleJoinGroup = async (groupId) => {
     try {
@@ -69,6 +76,26 @@ const GroupList = () => {
     (group.category && group.category.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false)
+  const [inviteCode, setInviteCode] = useState('')
+  const [inviteLoading, setInviteLoading] = useState(false)
+
+  const handleJoinByCode = async () => {
+    if (!inviteCode.trim()) return
+    setInviteLoading(true)
+    try {
+      const response = await groupService.joinGroupByInviteCode(inviteCode)
+      setSnackbar({ open: true, message: response || 'Successfully joined the group!', severity: 'success' })
+      setInviteDialogOpen(false)
+      setInviteCode('')
+      fetchGroups() // Refresh list just in case
+    } catch (err) {
+      setSnackbar({ open: true, message: err.response?.data?.message || 'Invalid invite code or already joined.', severity: 'error' })
+    } finally {
+      setInviteLoading(false)
+    }
+  }
+
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false })
   }
@@ -81,10 +108,16 @@ const GroupList = () => {
           <Button
             variant="outlined"
             startIcon={<RefreshIcon />}
-            onClick={fetchGroups}
+            onClick={() => fetchGroups(activeTab)}
             disabled={loading}
           >
             Refresh
+          </Button>
+          <Button
+            variant="outlined"
+            onClick={() => setInviteDialogOpen(true)}
+          >
+            Join with Code
           </Button>
           <Button
             variant="contained"
@@ -150,6 +183,31 @@ const GroupList = () => {
           ))}
         </Grid>
       )}
+
+      <Dialog open={inviteDialogOpen} onClose={() => setInviteDialogOpen(false)}>
+        <DialogTitle>Join Group with Invite Code</DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ mb: 2 }}>
+            If you have received an invite code from a group owner, enter it below to join immediately.
+          </Typography>
+          <TextField
+            autoFocus
+            margin="dense"
+            label="Invite Code"
+            type="text"
+            fullWidth
+            variant="outlined"
+            value={inviteCode}
+            onChange={(e) => setInviteCode(e.target.value)}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setInviteDialogOpen(false)}>Cancel</Button>
+          <Button onClick={handleJoinByCode} variant="contained" disabled={inviteLoading || !inviteCode.trim()}>
+            {inviteLoading ? <CircularProgress size={24} /> : 'Join'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Snackbar
         open={snackbar.open}

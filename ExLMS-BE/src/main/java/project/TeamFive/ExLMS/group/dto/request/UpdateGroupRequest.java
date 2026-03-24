@@ -8,4 +8,5 @@ public class UpdateGroupRequest {
     private String description;
     private String visibility;
     private String category;
+    private Boolean autoApprove;
 }

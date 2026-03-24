@@ -57,18 +57,28 @@ const itemVariants = {
 const Dashboard = () => {
   const { user } = useSelector((state) => state.auth)
   const [loading, setLoading] = useState(true)
+  const [statsData, setStatsData] = useState(null)
 
-  // Simulate data fetching
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 1000)
-    return () => clearTimeout(timer)
+    const fetchStats = async () => {
+      try {
+        const { default: dashboardService } = await import('../services/dashboardService')
+        const data = await dashboardService.getStats()
+        setStatsData(data)
+      } catch (err) {
+        console.error('Failed to load dashboard stats', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchStats()
   }, [])
 
   const stats = [
-    { label: 'Joined Groups', value: 5, icon: <GroupIcon />, color: '#4f46e5', bg: 'rgba(79, 70, 229, 0.1)' },
-    { label: 'Courses in Progress', value: 3, icon: <CourseIcon />, color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' },
-    { label: 'Pending Assignments', value: 2, icon: <AssignmentIcon />, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
-    { label: 'Upcoming Meetings', value: 1, icon: <EventIcon />, color: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)' },
+    { label: 'Joined Groups', value: statsData?.joinedGroups || 0, icon: <GroupIcon />, color: '#4f46e5', bg: 'rgba(79, 70, 229, 0.1)' },
+    { label: 'Courses in Progress', value: statsData?.coursesInProgress || 0, icon: <CourseIcon />, color: '#10b981', bg: 'rgba(16, 185, 129, 0.1)' },
+    { label: 'Pending Assignments', value: statsData?.pendingAssignments || 0, icon: <AssignmentIcon />, color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.1)' },
+    { label: 'Upcoming Meetings', value: statsData?.upcomingMeetings || 0, icon: <EventIcon />, color: '#ef4444', bg: 'rgba(239, 68, 68, 0.1)' },
   ]
 
   const upcomingMeetings = [

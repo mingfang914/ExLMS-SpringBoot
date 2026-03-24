@@ -9,4 +9,5 @@ public class CreateGroupRequest {
     private String visibility; // Truyền vào "PUBLIC" hoặc "PRIVATE"
     private String category;
     private String coverKey;
+    private Boolean autoApprove;
 }

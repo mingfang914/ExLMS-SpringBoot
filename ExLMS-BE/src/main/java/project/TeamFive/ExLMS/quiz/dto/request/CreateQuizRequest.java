@@ -1,6 +1,7 @@
 package project.TeamFive.ExLMS.quiz.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Min;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,8 +20,13 @@ public class CreateQuizRequest {
     private String title;
     private String description;
     private UUID chapterId;
+    @Min(0)
     private Integer timeLimitSec;
+    @Builder.Default
+    @Min(1)
     private int maxAttempts = 1;
+    @Builder.Default
+    @Min(0)
     private int passingScore = 50;
     private boolean shuffleQuestions = false;
     private Quiz.ResultVisibility resultVisibility = Quiz.ResultVisibility.IMMEDIATE;
@@ -34,6 +40,8 @@ public class CreateQuizRequest {
         @NotBlank(message = "Content is required")
         private String content;
         private String questionType;
+        @Builder.Default
+        @Min(1)
         private int points = 1;
         private String explanation;
         private List<AnswerRequest> answers;

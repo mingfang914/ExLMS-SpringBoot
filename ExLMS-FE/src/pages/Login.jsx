@@ -12,7 +12,7 @@ import {
 } from '@mui/material'
 import { Link as RouterLink, useNavigate } from 'react-router-dom'
 import { useDispatch } from 'react-redux'
-import { loginStart, loginSuccess, loginFailure } from '../store/authSlice'
+import { loginStart, loginSuccess, loginFailure, setUser } from '../store/authSlice'
 import authService from '../services/authService'
 
 const Login = () => {
@@ -32,10 +32,20 @@ const Login = () => {
 
     try {
       const data = await authService.login(email, password)
+      // 1. Store token so subsequent requests are authenticated
       dispatch(loginSuccess({
         token: data.token,
-        user: { email: data.email, role: data.role }
+        refreshToken: data.refreshToken,
+        user: data
       }))
+      // 2. Fetch full user profile (including persigned avatarUrl from MinIO)
+      //    and sync it to Redux so header shows correct avatar/name immediately
+      try {
+        const profile = await authService.getCurrentUser()
+        dispatch(setUser(profile))
+      } catch (_) {
+        // Non-fatal: header will still show basic info from login response
+      }
       navigate('/')
     } catch (err) {
       const message = err.response?.data?.message || 'Login failed. Please check your credentials.'

@@ -30,11 +30,12 @@ public class CourseService {
 
     // --- HÀM DÙNG CHUNG: Kiểm tra quyền Giảng viên (Owner/Editor) ---
     private void requireInstructorRole(StudyGroup group, User user) {
-        GroupMember member = groupMemberRepository.findByGroupAndUser(group, user)
+        GroupMember member = groupMemberRepository.findByGroup_IdAndUser_Id(group.getId(), user.getId())
                 .orElseThrow(() -> new RuntimeException("Bạn không phải là thành viên của nhóm này!"));
-        
+
         if (!"OWNER".equals(member.getRole()) && !"EDITOR".equals(member.getRole())) {
-            throw new RuntimeException("Truy cập bị từ chối: Chỉ Chủ nhóm hoặc Biên tập viên mới có quyền quản lý khóa học!");
+            throw new RuntimeException(
+                    "Truy cập bị từ chối: Chỉ Chủ nhóm hoặc Biên tập viên mới có quyền quản lý khóa học!");
         }
     }
 
@@ -49,11 +50,18 @@ public class CourseService {
         requireInstructorRole(group, currentUser);
 
         // 2. Tạo khóa học
+        String thumbnailKey = request.getThumbnailKey();
+        if (thumbnailKey == null || thumbnailKey.trim().isEmpty()) {
+            thumbnailKey = "DefaultCourseImg.png";
+        }
+
         Course newCourse = Course.builder()
                 .group(group)
                 .title(request.getTitle())
                 .description(request.getDescription())
-                .thumbnailKey(request.getThumbnailKey()) // Cần thêm field này vào CourseRequest
+                .thumbnailKey(thumbnailKey)
+                .startDate(request.getStartDate())
+                .endDate(request.getEndDate())
                 .status(request.getStatus() != null ? request.getStatus() : "DRAFT")
                 .createdBy(currentUser)
                 .build();
@@ -65,11 +73,12 @@ public class CourseService {
     // ==================== READ (Tối ưu với readOnly = true) ====================
     @Transactional(readOnly = true)
     public List<CourseResponse> getCoursesByGroupId(UUID groupId) {
-        // Sinh viên trong nhóm cũng có thể xem danh sách khóa học, nên ở đây ta chỉ cần check có phải thành viên không
+        // Sinh viên trong nhóm cũng có thể xem danh sách khóa học, nên ở đây ta chỉ cần
+        // check có phải thành viên không
         User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         StudyGroup group = studyGroupRepository.findById(groupId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy nhóm học tập!"));
-        
+
         if (!groupMemberRepository.existsByGroupAndUser(group, currentUser)) {
             throw new RuntimeException("Bạn phải tham gia nhóm mới xem được khóa học!");
         }
@@ -79,15 +88,72 @@ public class CourseService {
                 .collect(Collectors.toList());
     }
 
+    // ==================== READ 1 COURSE ====================
+    @Transactional(readOnly = true)
+    public CourseResponse getCourseById(UUID courseId) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy khóa học!"));
+        return mapToResponse(course);
+    }
+
+    // ==================== UPDATE ====================
+    @Transactional
+    public CourseResponse updateCourse(UUID courseId, CourseRequest request) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy khóa học!"));
+
+        User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        requireInstructorRole(course.getGroup(), currentUser);
+
+        if (request.getTitle() != null)
+            course.setTitle(request.getTitle());
+        if (request.getDescription() != null)
+            course.setDescription(request.getDescription());
+        if (request.getThumbnailKey() != null)
+            course.setThumbnailKey(request.getThumbnailKey());
+        if (request.getStatus() != null)
+            course.setStatus(request.getStatus());
+        if (request.getStartDate() != null)
+            course.setStartDate(request.getStartDate());
+        if (request.getEndDate() != null)
+            course.setEndDate(request.getEndDate());
+
+        return mapToResponse(courseRepository.save(course));
+    }
+
+    // ==================== DELETE ====================
+    @Transactional
+    public String deleteCourse(UUID courseId) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy khóa học!"));
+
+        User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        requireInstructorRole(course.getGroup(), currentUser);
+
+        course.setStatus("DELETED"); // Soft delete
+        courseRepository.save(course);
+        return "Đã xóa khóa học thành công!";
+    }
+
     // --- Hàm phụ trợ map sang DTO ---
     private CourseResponse mapToResponse(Course course) {
+        String thumbUrl = null;
+        if (course.getThumbnailKey() != null && !course.getThumbnailKey().trim().isEmpty()) {
+            try {
+                thumbUrl = fileService.getPresignedUrl(course.getThumbnailKey());
+            } catch (Exception e) {
+            }
+        }
+
         return CourseResponse.builder()
                 .id(course.getId())
                 .title(course.getTitle())
                 .description(course.getDescription())
                 .status(course.getStatus())
                 .groupId(course.getGroup().getId())
-                .thumbnailUrl(fileService.getPresignedUrl(course.getThumbnailKey()))
+                .thumbnailUrl(thumbUrl)
+                .startDate(course.getStartDate())
+                .endDate(course.getEndDate())
                 .build();
     }
 }

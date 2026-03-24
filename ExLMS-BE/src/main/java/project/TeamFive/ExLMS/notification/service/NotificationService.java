@@ -19,6 +19,7 @@ public class NotificationService {
 
     private final NotificationRepository notificationRepository;
 
+    @Transactional(readOnly = true)
     public List<NotificationResponseDTO> getNotificationsForUser(User user) {
         return notificationRepository.findByRecipientOrderByCreatedAtDesc(user).stream()
                 .map(NotificationResponseDTO::fromEntity)

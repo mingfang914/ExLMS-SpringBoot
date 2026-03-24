@@ -23,6 +23,12 @@ const FileUpload = ({ onUploadSuccess, accept = "*", label = "Upload File" }) =>
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0]
     if (selectedFile) {
+      if (selectedFile.size > 1048576) {
+        setError('File size must be strictly less than 1MB.')
+        setFile(null)
+        e.target.value = ''
+        return
+      }
       setFile(selectedFile)
       setError(null)
     }

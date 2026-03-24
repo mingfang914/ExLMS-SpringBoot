@@ -24,6 +24,7 @@ public class MeetingResponseDTO {
     private LocalDateTime startAt;
     private int durationMinutes;
     private Meeting.MeetingStatus status;
+    private String currentUserRole;
 
     public static MeetingResponseDTO fromEntity(Meeting meeting) {
         return MeetingResponseDTO.builder()

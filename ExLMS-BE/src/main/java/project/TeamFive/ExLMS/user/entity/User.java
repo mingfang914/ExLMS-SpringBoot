@@ -5,11 +5,10 @@ import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import project.TeamFive.ExLMS.entity.BaseEntity;
-
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "users")
@@ -18,7 +17,15 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class User extends BaseEntity implements UserDetails {
+public class User implements UserDetails {
+
+    @Id
+    @Column(columnDefinition = "BINARY(16)")
+    @Builder.Default
+    private UUID id = UUID.randomUUID();
+
+    @Column(name = "created_at", insertable = false, updatable = false)
+    private LocalDateTime createdAt;
 
     @Column(nullable = false, unique = true)
     private String email;

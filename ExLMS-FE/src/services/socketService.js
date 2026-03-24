@@ -5,32 +5,12 @@ import { addNotification } from '../store/notificationSlice'
 let socket;
 
 export const initSocket = () => {
-  // Connect to the socket server (replace with your backend URL)
-  socket = io('http://localhost:8081', {
-    transports: ['websocket'],
-    auth: {
-      token: localStorage.getItem('token')
-    }
-  })
-
-  socket.on('connect', () => {
-    console.log('Socket.IO connected!')
-  })
-
-  socket.on('disconnect', () => {
-    console.log('Socket.IO disconnected.')
-  })
-
-  // Listen for new notifications from the server
-  socket.on('new_notification', (notification) => {
-    store.dispatch(addNotification(notification))
-    // Optionally, show a browser notification
-  })
-
-  socket.on('connect_error', (err) => {
-    console.error('Socket.IO connection error:', err.message)
-  })
-
+  // Bỏ qua lỗi kết nối bằng cách mock sự kiện vì Socket.IO Backend chưa được triển khai.
+  socket = {
+    on: () => {},
+    emit: () => {},
+    disconnect: () => {}
+  }
   return socket
 }
 

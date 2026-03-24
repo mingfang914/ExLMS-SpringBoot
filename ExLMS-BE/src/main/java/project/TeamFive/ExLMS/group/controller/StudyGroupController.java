@@ -29,6 +29,11 @@ public class StudyGroupController {
         return ResponseEntity.ok(studyGroupService.getAllPublicGroups());
     }
 
+    @GetMapping("/my")
+    public ResponseEntity<List<GroupResponse>> getMyGroups() {
+        return ResponseEntity.ok(studyGroupService.getMyGroups());
+    }
+
     // [READ] Lấy chi tiết nhóm theo ID
     @GetMapping("/{id}")
     public ResponseEntity<GroupResponse> getGroupById(@PathVariable UUID id) {
@@ -81,5 +86,38 @@ public class StudyGroupController {
     @GetMapping("/{id}/join-requests/pending")
     public ResponseEntity<?> getPendingJoinRequests(@PathVariable UUID id) {
         return ResponseEntity.ok(studyGroupService.getPendingJoinRequests(id));
+    }
+
+    // ==================== QUẢN LÝ THÀNH VIÊN ====================
+
+    // 1. Thay đổi quyền (Owner)
+    @PutMapping("/{id}/members/{userId}/role")
+    public ResponseEntity<String> changeMemberRole(
+            @PathVariable UUID id, 
+            @PathVariable UUID userId, 
+            @RequestParam String role) {
+        return ResponseEntity.ok(studyGroupService.changeMemberRole(id, userId, role));
+    }
+
+    // 2. Xóa thành viên
+    @DeleteMapping("/{id}/members/{userId}")
+    public ResponseEntity<String> removeMember(
+            @PathVariable UUID id, 
+            @PathVariable UUID userId) {
+        return ResponseEntity.ok(studyGroupService.removeMember(id, userId));
+    }
+
+    // 3. Chuyển quyền Chủ nhóm
+    @PutMapping("/{id}/transfer-owner/{newOwnerId}")
+    public ResponseEntity<String> transferOwnership(
+            @PathVariable UUID id, 
+            @PathVariable UUID newOwnerId) {
+        return ResponseEntity.ok(studyGroupService.transferOwnership(id, newOwnerId));
+    }
+
+    // 4. Mới: Tạo lại mã mời
+    @PutMapping("/{id}/regenerate-invite-code")
+    public ResponseEntity<String> regenerateInviteCode(@PathVariable UUID id) {
+        return ResponseEntity.ok(studyGroupService.regenerateInviteCode(id));
     }
 }

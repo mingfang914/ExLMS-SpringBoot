@@ -32,3 +32,20 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Bỏ qua các tệp thực thi/biên dịch của Java
+ReadDocx.class
+
+# Bỏ qua các tài liệu đặc tả và thiết kế (thường lưu trên Drive/Cloud)
+LMS_SRS_v1.0.docx
+
+# Bỏ qua các tệp văn bản tạm hoặc danh sách tệp
+be.txt
+be_files.txt
+fe.txt
+fe_files.txt
+srs.txt
+
+# Bỏ qua các tệp sao lưu/dump cơ sở dữ liệu (để tránh lộ dữ liệu nhạy cảm)
+lms_schema_mysql_v2.sql
+

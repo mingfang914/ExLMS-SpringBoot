@@ -18,6 +18,7 @@ const Register = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  const [desiredRole, setDesiredRole] = useState('STUDENT')
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
   
@@ -35,7 +36,7 @@ const Register = () => {
     }
 
     try {
-      await authService.register(fullName, email, password)
+      await authService.register(fullName, email, password, desiredRole)
       navigate('/login', { state: { message: 'Registration successful! Please sign in.' } })
     } catch (err) {
       setError(err.response?.data?.message || 'Registration failed. Please try again.')
@@ -113,6 +114,23 @@ const Register = () => {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
             />
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              select
+              name="desiredRole"
+              label="I want to register as"
+              id="desiredRole"
+              value={desiredRole}
+              onChange={(e) => setDesiredRole(e.target.value)}
+              SelectProps={{
+                native: true,
+              }}
+            >
+              <option value="STUDENT">Student</option>
+              <option value="INSTRUCTOR">Instructor</option>
+            </TextField>
             <Button
               type="submit"
               fullWidth

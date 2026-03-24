@@ -36,15 +36,18 @@ public class Assignment extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Builder.Default
     @Column(name = "max_score", nullable = false)
     private int maxScore = 100;
 
+    @Builder.Default
     @Column(name = "assigned_at", nullable = false)
     private LocalDateTime assignedAt = LocalDateTime.now();
 
     @Column(name = "due_at", nullable = false)
     private LocalDateTime dueAt;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(name = "submission_type", nullable = false)
     private SubmissionType submissionType = SubmissionType.FILE;
@@ -52,15 +55,19 @@ public class Assignment extends BaseEntity {
     @Column(name = "allowed_file_types", length = 255)
     private String allowedFileTypes;
 
+    @Builder.Default
     @Column(name = "max_file_size_mb", nullable = false)
     private int maxFileSizeMb = 50;
 
+    @Builder.Default
     @Column(name = "allow_late", nullable = false)
     private boolean allowLate = false;
 
+    @Builder.Default
     @Column(name = "late_penalty_percent", nullable = false)
     private int latePenaltyPercent = 0;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private AssignmentStatus status = AssignmentStatus.DRAFT;

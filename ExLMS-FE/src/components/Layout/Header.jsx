@@ -171,7 +171,7 @@ const Header = () => {
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Avatar 
                   alt={user?.email || 'User'} 
-                  src="/static/images/avatar/1.jpg" 
+                  src={user?.avatarUrl || "https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=600&auto=format"} 
                   sx={{ 
                     width: 40, height: 40, 
                     border: '2px solid rgba(79, 70, 229, 0.2)',
@@ -214,14 +214,14 @@ const Header = () => {
           >
             <Box sx={{ px: 2, py: 1, mb: 1 }}>
               <Typography variant="subtitle2" fontWeight={600} color="text.primary">
-                {user?.name || 'Student'}
+                {user?.name || user?.fullName || 'Student'}
               </Typography>
               <Typography variant="caption" color="text.secondary">
                 {user?.email || 'student@exlms.edu'}
               </Typography>
             </Box>
             <Divider sx={{ mb: 1 }} />
-            <MenuItem onClick={handleCloseUserMenu} sx={{ borderRadius: 1.5, mb: 0.5 }}>
+            <MenuItem onClick={() => { handleCloseUserMenu(); navigate('/profile'); }} sx={{ borderRadius: 1.5, mb: 0.5 }}>
               <ListItemIcon><UserIcon fontSize="small" /></ListItemIcon>
               <ListItemText>My Profile</ListItemText>
             </MenuItem>

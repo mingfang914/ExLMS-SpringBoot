@@ -35,4 +35,19 @@ public class ForumController {
     public ResponseEntity<ForumPostResponse> getPostById(@PathVariable UUID id) {
         return ResponseEntity.ok(forumService.getPostById(id));
     }
+
+    @PutMapping("/posts/{id}")
+    public ResponseEntity<ForumPostResponse> updatePost(
+            @PathVariable UUID id,
+            @RequestBody CreatePostRequest request,
+            @AuthenticationPrincipal User author) {
+        return ResponseEntity.ok(forumService.updatePost(id, request, author));
+    }
+
+    @DeleteMapping("/posts/{id}")
+    public ResponseEntity<String> deletePost(
+            @PathVariable UUID id,
+            @AuthenticationPrincipal User author) {
+        return ResponseEntity.ok(forumService.deletePost(id, author));
+    }
 }

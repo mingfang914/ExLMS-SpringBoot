@@ -18,15 +18,17 @@ import {
   Forum as ForumIcon,
   Event as CalendarIcon,
   Notifications as NotificationIcon,
-  Assignment as AssignmentIcon
+  Assignment as AssignmentIcon,
+  SupervisorAccount as SupervisorAccountIcon
 } from '@mui/icons-material'
 import { Link, useLocation } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { useSelector } from 'react-redux'
 
 const drawerWidth = 240
 
 const Sidebar = () => {
   const location = useLocation()
+  const { user } = useSelector((state) => state.auth)
 
   const menuItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
@@ -37,6 +39,10 @@ const Sidebar = () => {
     { text: 'Calendar', icon: <CalendarIcon />, path: '/calendar' },
     { text: 'Notifications', icon: <NotificationIcon />, path: '/notifications' },
   ]
+  
+  if (user?.role === 'ADMIN') {
+    menuItems.push({ text: 'User Management', icon: <SupervisorAccountIcon />, path: '/admin/users' })
+  }
 
   return (
     <Drawer

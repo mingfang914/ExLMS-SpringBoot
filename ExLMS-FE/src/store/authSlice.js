@@ -22,6 +22,9 @@ const authSlice = createSlice({
       state.user = action.payload.user
       state.token = action.payload.token
       localStorage.setItem('token', action.payload.token)
+      if (action.payload.refreshToken) {
+        localStorage.setItem('refreshToken', action.payload.refreshToken)
+      }
     },
     loginFailure: (state, action) => {
       state.loading = false
@@ -32,6 +35,7 @@ const authSlice = createSlice({
       state.token = null
       state.isAuthenticated = false
       localStorage.removeItem('token')
+      localStorage.removeItem('refreshToken')
     },
     setUser: (state, action) => {
       state.user = action.payload

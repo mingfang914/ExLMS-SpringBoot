@@ -42,15 +42,51 @@ public class ForumService {
         return ForumPostResponse.fromEntity(postRepository.save(post));
     }
 
+    @Transactional(readOnly = true)
     public List<ForumPostResponse> getAllPosts() {
         return postRepository.findAll().stream()
                 .map(ForumPostResponse::fromEntity)
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public ForumPostResponse getPostById(UUID id) {
         ForumPost post = postRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Post not found"));
         return ForumPostResponse.fromEntity(post);
+    }
+
+    @Transactional
+    public ForumPostResponse updatePost(UUID postId, CreatePostRequest request, User author) {
+        ForumPost post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+        
+        if (!post.getAuthor().getId().equals(author.getId())) {
+            throw new RuntimeException("Chỉ tác giả mới có quyền sửa bài viết!");
+        }
+
+        if (request.getTitle() != null) post.setTitle(request.getTitle());
+        if (request.getContent() != null) post.setContent(request.getContent());
+
+        if (request.getTagIds() != null) {
+            Set<ForumTag> tags = new HashSet<>(tagRepository.findAllById(request.getTagIds()));
+            post.setTags(tags);
+        }
+
+        return ForumPostResponse.fromEntity(postRepository.save(post));
+    }
+
+    @Transactional
+    public String deletePost(UUID postId, User author) {
+        ForumPost post = postRepository.findById(postId)
+                .orElseThrow(() -> new RuntimeException("Post not found"));
+        
+        if (!post.getAuthor().getId().equals(author.getId())) {
+            throw new RuntimeException("Chỉ tác giả mới có quyền xóa bài viết!");
+        }
+
+        post.setStatus(ForumPost.PostStatus.DELETED); // soft delete
+        postRepository.save(post);
+        return "Đã xóa bài viết thành công!";
     }
 }

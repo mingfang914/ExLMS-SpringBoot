@@ -6,6 +6,11 @@ const groupService = {
     return response.data
   },
 
+  getMyGroups: async () => {
+    const response = await api.get('/groups/my')
+    return response.data
+  },
+
   getGroupById: async (id) => {
     const response = await api.get(`/groups/${id}`)
     return response.data
@@ -48,6 +53,21 @@ const groupService = {
 
   reviewJoinRequest: async (requestId, approve) => {
     const response = await api.put(`/groups/join-requests/${requestId}/review?approve=${approve}`)
+    return response.data
+  },
+
+  changeMemberRole: async (groupId, userId, role) => {
+    const response = await api.put(`/groups/${groupId}/members/${userId}/role?role=${role}`)
+    return response.data
+  },
+
+  removeMember: async (groupId, userId) => {
+    const response = await api.delete(`/groups/${groupId}/members/${userId}`)
+    return response.data
+  },
+
+  transferOwnership: async (groupId, newOwnerId) => {
+    const response = await api.put(`/groups/${groupId}/transfer-owner/${newOwnerId}`)
     return response.data
   }
 }

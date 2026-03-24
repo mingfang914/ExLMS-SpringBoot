@@ -16,13 +16,23 @@ public class JwtService {
     // Trong thực tế, chuỗi này phải được lưu trong file cấu hình application.yml
     private static final String SECRET_KEY = "VGhpcy1pcy1hLXZlcnktc2VjdXJlLWtleS1mb3ItZXhsbXMtYmFja2VuZC1wcm9qZWN0LXRlYW0tZml2ZQ==";
 
-    // Hàm tạo Token khi user đăng nhập thành công
+    // Hàm tạo Access Token (hạn 15 phút)
     public String generateToken(UserDetails userDetails) {
         return Jwts.builder()
                 .subject(userDetails.getUsername()) // Lưu email vào token
                 .issuedAt(new Date(System.currentTimeMillis())) // Thời gian phát hành
-                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24)) // Hạn sử dụng: 24 giờ
+                .expiration(new Date(System.currentTimeMillis() + 1000 * 60 * 15)) // Hạn sử dụng: 15 phút
                 .signWith(getSignInKey()) // Ký xác nhận bằng Secret Key
+                .compact();
+    }
+
+    // Hàm tạo Refresh Token (hạn 7 ngày)
+    public String generateRefreshToken(UserDetails userDetails) {
+        return Jwts.builder()
+                .subject(userDetails.getUsername())
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(new Date(System.currentTimeMillis() + 1000L * 60 * 60 * 24 * 7)) // Hạn sử dụng: 7 ngày
+                .signWith(getSignInKey())
                 .compact();
     }
 

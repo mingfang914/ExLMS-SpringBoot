@@ -23,11 +23,36 @@ api.interceptors.request.use(
   }
 )
 
-// Response interceptor to handle token expiration
+// Response interceptor to handle token expiration or unauthorized access
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
+  async (error) => {
+    const originalRequest = error.config
+    
+    // Check if error is 401/403 and we haven't retried yet
+    if ((error.response?.status === 401 || error.response?.status === 403) && !originalRequest._retry) {
+      originalRequest._retry = true
+      
+      const refreshToken = localStorage.getItem('refreshToken')
+      if (refreshToken) {
+        try {
+          // Using axios directly to avoid interceptor loop
+          const res = await axios.post(`/api/auth/refresh-token?token=${refreshToken}`)
+          
+          if (res.data && res.data.token) {
+            localStorage.setItem('token', res.data.token)
+            if (res.data.refreshToken) {
+              localStorage.setItem('refreshToken', res.data.refreshToken)
+            }
+            originalRequest.headers.Authorization = `Bearer ${res.data.token}`
+            return api(originalRequest)
+          }
+        } catch (refreshErr) {
+          // Refresh failed
+        }
+      }
+      
+      // Clear token and redirect to login if unauthorized and refresh failed
       store.dispatch(logout())
       window.location.href = '/login'
     }

@@ -6,6 +6,8 @@ import project.TeamFive.ExLMS.entity.BaseEntity;
 import project.TeamFive.ExLMS.group.entity.StudyGroup;
 import project.TeamFive.ExLMS.user.entity.User;
 
+import java.time.LocalDate;
+
 @Entity
 @Table(name = "courses")
 @Getter
@@ -29,6 +31,13 @@ public class Course extends BaseEntity {
     @Column(name = "thumbnail_key", length = 36)
     private String thumbnailKey;
 
+    @Column(name = "start_date")
+    private LocalDate startDate;
+
+    @Column(name = "end_date")
+    private LocalDate endDate;
+
+    @Builder.Default
     @Column(nullable = false)
     private String status = "DRAFT"; // DRAFT, PUBLISHED, ENDED, ARCHIVED
 

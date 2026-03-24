@@ -31,4 +31,26 @@ public class CourseController {
             @PathVariable UUID groupId) {
         return ResponseEntity.ok(courseService.getCoursesByGroupId(groupId));
     }
+
+    @GetMapping("/{courseId}")
+    public ResponseEntity<CourseResponse> getCourseById(
+            @PathVariable UUID groupId,
+            @PathVariable UUID courseId) {
+        return ResponseEntity.ok(courseService.getCourseById(courseId));
+    }
+
+    @PutMapping("/{courseId}")
+    public ResponseEntity<CourseResponse> updateCourse(
+            @PathVariable UUID groupId,
+            @PathVariable UUID courseId,
+            @RequestBody CourseRequest request) {
+        return ResponseEntity.ok(courseService.updateCourse(courseId, request));
+    }
+
+    @DeleteMapping("/{courseId}")
+    public ResponseEntity<String> deleteCourse(
+            @PathVariable UUID groupId,
+            @PathVariable UUID courseId) {
+        return ResponseEntity.ok(courseService.deleteCourse(courseId));
+    }
 }
