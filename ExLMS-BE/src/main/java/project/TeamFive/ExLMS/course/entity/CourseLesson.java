@@ -22,6 +22,7 @@ public class CourseLesson extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "content_type", nullable = false)
+    @Builder.Default
     private ContentType contentType = ContentType.DOCUMENT;
 
     @Column(columnDefinition = "LONGTEXT")
@@ -34,6 +35,7 @@ public class CourseLesson extends BaseEntity {
     private Integer durationSeconds;
 
     @Column(name = "order_index", nullable = false)
+    @Builder.Default
     private int orderIndex = 0;
 
     public enum ContentType {

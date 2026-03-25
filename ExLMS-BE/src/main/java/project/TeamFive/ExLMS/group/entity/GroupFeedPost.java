@@ -36,12 +36,15 @@ public class GroupFeedPost extends BaseEntity {
     private LinkedEntityType linkedEntityType;
 
     @Column(name = "is_pinned", nullable = false)
+    @Builder.Default
     private boolean pinned = false;
 
     @Column(name = "reaction_count", nullable = false)
+    @Builder.Default
     private int reactionCount = 0;
 
     @Column(name = "comment_count", nullable = false)
+    @Builder.Default
     private int commentCount = 0;
 
     public enum LinkedEntityType {

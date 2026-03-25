@@ -49,7 +49,7 @@ const QuizResult = () => {
           {isPassed ? 'Chúc mừng! Bạn đã đạt' : 'Rất tiếc! Bạn chưa đạt'}
         </Typography>
         <Typography variant="h2" color={isPassed ? 'success.main' : 'error.main'} fontWeight={800} sx={{ my: 2 }}>
-          {result.score.toFixed(1)}%
+          {(result.score || 0).toFixed(1)}%
         </Typography>
         <Typography color="text.secondary">
           Điểm cần đạt: {result.passingScore}%
@@ -69,7 +69,7 @@ const QuizResult = () => {
       <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>Chi tiết bài làm</Typography>
       <List>
         {(result.responses || []).map((resp, idx) => (
-          <Paper key={resp.id} sx={{ mb: 2, p: 2, borderRadius: 2 }}>
+          <Paper key={resp.questionId || idx} sx={{ mb: 2, p: 2, borderRadius: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
               <Box sx={{ mt: 0.5 }}>
                 {resp.correct ? (

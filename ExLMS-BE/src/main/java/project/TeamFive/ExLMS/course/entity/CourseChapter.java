@@ -24,9 +24,11 @@ public class CourseChapter extends BaseEntity {
     private String description;
 
     @Column(name = "order_index", nullable = false)
+    @Builder.Default
     private int orderIndex = 0;
 
     @Column(name = "is_locked", nullable = false)
+    @Builder.Default
     private boolean locked = false;
 
     @ManyToOne(fetch = FetchType.LAZY)

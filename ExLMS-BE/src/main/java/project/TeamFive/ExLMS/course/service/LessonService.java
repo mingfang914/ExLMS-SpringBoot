@@ -118,8 +118,6 @@ public class LessonService {
 
             // Tính lại progress_percent
             long completedCount = progressRepository.countByEnrollment_IdAndCompletedTrue(enrollment.getId());
-            long totalLessons = lessonRepository.findByChapter_IdOrderByOrderIndexAsc(
-                    lesson.getChapter().getId()).size();
 
             // Lấy tổng tất cả lessons trong course
             var allChapters = chapterRepository.findByCourse_IdOrderByOrderIndexAsc(courseId);

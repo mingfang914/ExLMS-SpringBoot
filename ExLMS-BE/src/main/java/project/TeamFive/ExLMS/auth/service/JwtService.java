@@ -3,6 +3,7 @@ package project.TeamFive.ExLMS.auth.service;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -12,9 +13,8 @@ import java.util.Date;
 @Service
 public class JwtService {
 
-    // Đây là chữ ký bí mật của Server (Tuyệt đối không để lộ). 
-    // Trong thực tế, chuỗi này phải được lưu trong file cấu hình application.yml
-    private static final String SECRET_KEY = "VGhpcy1pcy1hLXZlcnktc2VjdXJlLWtleS1mb3ItZXhsbXMtYmFja2VuZC1wcm9qZWN0LXRlYW0tZml2ZQ==";
+    @Value("${application.security.jwt.secret-key}")
+    private String secretKey;
 
     // Hàm tạo Access Token (hạn 15 phút)
     public String generateToken(UserDetails userDetails) {
@@ -37,7 +37,7 @@ public class JwtService {
     }
 
     private SecretKey getSignInKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
+        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
         return Keys.hmacShaKeyFor(keyBytes);
     }
 

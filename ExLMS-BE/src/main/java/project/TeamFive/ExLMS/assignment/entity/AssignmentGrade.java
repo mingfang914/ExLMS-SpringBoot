@@ -35,9 +35,11 @@ public class AssignmentGrade extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private GradeStatus status = GradeStatus.GRADED;
 
     @Column(name = "graded_at", nullable = false)
+    @Builder.Default
     private LocalDateTime gradedAt = LocalDateTime.now();
 
     public enum GradeStatus {

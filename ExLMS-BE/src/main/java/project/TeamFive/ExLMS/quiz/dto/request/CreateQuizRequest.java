@@ -28,7 +28,9 @@ public class CreateQuizRequest {
     @Builder.Default
     @Min(0)
     private int passingScore = 50;
+    @Builder.Default
     private boolean shuffleQuestions = false;
+    @Builder.Default
     private Quiz.ResultVisibility resultVisibility = Quiz.ResultVisibility.IMMEDIATE;
     private List<QuestionRequest> questions;
 

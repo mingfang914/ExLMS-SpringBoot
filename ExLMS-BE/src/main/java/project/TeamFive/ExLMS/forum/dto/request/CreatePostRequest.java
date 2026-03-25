@@ -23,4 +23,5 @@ public class CreatePostRequest {
     private String content;
 
     private Set<UUID> tagIds;
+    private String tagNames;
 }

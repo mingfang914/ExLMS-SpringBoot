@@ -28,12 +28,14 @@ public class QuizAttempt extends BaseEntity {
     private Integer score;
 
     @Column(name = "attempt_number", nullable = false)
+    @Builder.Default
     private int attemptNumber = 1;
 
     @Column(name = "is_passed")
     private Boolean passed;
 
     @Column(name = "started_at", nullable = false)
+    @Builder.Default
     private LocalDateTime startedAt = LocalDateTime.now();
 
     @Column(name = "submitted_at")

@@ -21,6 +21,7 @@ public class GroupFeedPostResponse {
     private boolean pinned;
     private int reactionCount;
     private int commentCount;
+    private String authorGroupRole;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

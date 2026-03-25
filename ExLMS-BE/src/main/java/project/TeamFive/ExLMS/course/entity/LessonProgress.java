@@ -24,9 +24,11 @@ public class LessonProgress extends BaseEntity {
     private CourseLesson lesson;
 
     @Column(name = "is_completed", nullable = false)
+    @Builder.Default
     private boolean completed = false;
 
     @Column(name = "last_position_sec", nullable = false)
+    @Builder.Default
     private int lastPositionSec = 0;
 
     @Column(name = "completed_at")

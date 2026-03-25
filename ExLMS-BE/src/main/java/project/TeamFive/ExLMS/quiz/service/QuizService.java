@@ -1,6 +1,7 @@
 package project.TeamFive.ExLMS.quiz.service;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import project.TeamFive.ExLMS.course.entity.Course;
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class QuizService {
 
     private final QuizRepository quizRepository;
@@ -213,6 +215,7 @@ public class QuizService {
             return QuizAttemptResponse.builder()
                     .id(a.getId())
                     .quizId(quizId)
+                    .userId(student.getId())
                     .startedAt(a.getStartedAt())
                     .attemptNumber(a.getAttemptNumber())
                     .passingScore(quiz.getPassingScore())
@@ -239,6 +242,7 @@ public class QuizService {
         return QuizAttemptResponse.builder()
                 .id(savedAttempt.getId())
                 .quizId(quizId)
+                .userId(student.getId())
                 .startedAt(savedAttempt.getStartedAt())
                 .attemptNumber(savedAttempt.getAttemptNumber())
                 .passingScore(quiz.getPassingScore())
@@ -261,6 +265,7 @@ public class QuizService {
 
         for (QuizQuestion question : questions) {
             maxPossiblePoints += question.getPoints();
+            log.info("Grading question: {} ({} pts)", question.getId(), question.getPoints());
             
             var studentAns = submission.getAnswers().stream()
                     .filter(a -> a.getQuestionId().equals(question.getId()))
@@ -283,8 +288,10 @@ public class QuizService {
                             if (ans != null && ans.isCorrect()) {
                                 response.setCorrect(true);
                                 response.setPointsEarned(question.getPoints());
+                                log.info("  Correct! Points earned: {}", question.getPoints());
                             } else {
                                 response.setCorrect(false);
+                                log.info("  Incorrect. Selected answer: {}", studentAns.getSelectedAnswerId());
                             }
                         }
                         break;

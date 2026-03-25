@@ -46,12 +46,15 @@ public class User implements UserDetails {
     // Lưu Enum xuống DB dưới dạng chuỗi Text (ADMIN, INSTRUCTOR, STUDENT)
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private Role role = Role.STUDENT; 
 
     @Column(nullable = false)
+    @Builder.Default
     private String status = "PENDING";
 
     @Column(name = "email_verified", nullable = false)
+    @Builder.Default
     private boolean emailVerified = false;
 
     @Column(name = "verification_token", length = 128)
@@ -64,6 +67,7 @@ public class User implements UserDetails {
     private LocalDateTime resetTokenExpires;
 
     @Column(name = "failed_login_count", nullable = false)
+    @Builder.Default
     private int failedLoginCount = 0;
 
     @Column(name = "locked_until")

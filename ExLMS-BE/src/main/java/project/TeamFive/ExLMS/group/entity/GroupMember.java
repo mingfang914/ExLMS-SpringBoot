@@ -36,9 +36,11 @@ public class GroupMember {
     private User user;
 
     @Column(nullable = false)
+    @Builder.Default
     private String role = "OWNER";
 
     @Column(nullable = false)
+    @Builder.Default
     private String status = "ACTIVE";
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -22,15 +22,18 @@ public class QuizQuestion extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "question_type", nullable = false)
+    @Builder.Default
     private QuestionType questionType = QuestionType.SINGLE_CHOICE;
 
     @Column(nullable = false)
+    @Builder.Default
     private int points = 1;
 
     @Column(columnDefinition = "TEXT")
     private String explanation;
 
     @Column(name = "order_index", nullable = false)
+    @Builder.Default
     private int orderIndex = 0;
 
     public enum QuestionType {

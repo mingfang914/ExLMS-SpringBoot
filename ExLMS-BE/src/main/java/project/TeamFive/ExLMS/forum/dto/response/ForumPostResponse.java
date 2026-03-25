@@ -19,6 +19,7 @@ public class ForumPostResponse {
     private UUID id;
     private String authorName;
     private UUID authorId;
+    private String authorAvatarKey;
     private String title;
     private String content;
     private ForumPost.PostStatus status;
@@ -46,6 +47,7 @@ public class ForumPostResponse {
                 .id(post.getId())
                 .authorName(post.getAuthor().getFullName())
                 .authorId(post.getAuthor().getId())
+                .authorAvatarKey(post.getAuthor().getAvatarKey())
                 .title(post.getTitle())
                 .content(post.getContent())
                 .status(post.getStatus())

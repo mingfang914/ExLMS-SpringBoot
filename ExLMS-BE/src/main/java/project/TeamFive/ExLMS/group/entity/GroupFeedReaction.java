@@ -23,5 +23,6 @@ public class GroupFeedReaction extends BaseEntity {
     private User user;
 
     @Column(nullable = false, length = 10)
+    @Builder.Default
     private String emoji = "👍";
 }

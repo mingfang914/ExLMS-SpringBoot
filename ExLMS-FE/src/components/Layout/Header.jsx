@@ -171,7 +171,7 @@ const Header = () => {
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                 <Avatar 
                   alt={user?.email || 'User'} 
-                  src={user?.avatarUrl || "https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=600&auto=format"} 
+                  src={user?.avatarKey ? `http://localhost:3000/api/files/download/${user.avatarKey}` : (user?.avatarUrl || "https://images.unsplash.com/photo-1633356122544-f134324a6cee?q=80&w=600&auto=format")} 
                   sx={{ 
                     width: 40, height: 40, 
                     border: '2px solid rgba(79, 70, 229, 0.2)',

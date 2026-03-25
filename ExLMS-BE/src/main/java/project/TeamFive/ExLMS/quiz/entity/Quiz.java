@@ -34,16 +34,20 @@ public class Quiz extends BaseEntity {
     private Integer timeLimitSec;
 
     @Column(name = "max_attempts", nullable = false)
+    @Builder.Default
     private int maxAttempts = 1;
 
     @Column(name = "passing_score", nullable = false)
+    @Builder.Default
     private int passingScore = 50;
 
     @Column(name = "shuffle_questions", nullable = false)
+    @Builder.Default
     private boolean shuffleQuestions = false;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "result_visibility", nullable = false)
+    @Builder.Default
     private ResultVisibility resultVisibility = ResultVisibility.IMMEDIATE;
 
     @ManyToOne(fetch = FetchType.LAZY)

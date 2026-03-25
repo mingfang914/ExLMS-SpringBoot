@@ -5,6 +5,7 @@ import io.minio.MinioClient;
 import io.minio.PutObjectArgs;
 import io.minio.http.Method;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -15,6 +16,7 @@ import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class FileService {
 
     private final MinioClient minioClient;
@@ -36,10 +38,10 @@ public class FileService {
             boolean found = minioClient.bucketExists(io.minio.BucketExistsArgs.builder().bucket(name).build());
             if (!found) {
                 minioClient.makeBucket(io.minio.MakeBucketArgs.builder().bucket(name).build());
-                System.out.println("Bucket created successfully: " + name);
+                log.info("Bucket created successfully: {}", name);
             }
         } catch (Exception e) {
-            System.err.println("Error initializing Minio bucket " + name + ": " + e.getMessage());
+            log.error("Error initializing Minio bucket {}: {}", name, e.getMessage());
         }
     }
 
@@ -133,6 +135,19 @@ public class FileService {
             );
         } catch (Exception e) {
             throw new RuntimeException("Error retrieving resource: " + e.getMessage());
+        }
+    }
+
+    public io.minio.GetObjectResponse downloadFile(String objectKey) {
+        try {
+            return minioClient.getObject(
+                    io.minio.GetObjectArgs.builder()
+                            .bucket(bucketName)
+                            .object(objectKey)
+                            .build()
+            );
+        } catch (Exception e) {
+            throw new RuntimeException("Error retrieving file: " + e.getMessage());
         }
     }
 }

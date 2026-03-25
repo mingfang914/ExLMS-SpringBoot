@@ -17,6 +17,8 @@ import QuizResult from './pages/Courses/QuizResult'
 import MeetingRoom from './pages/Meetings/MeetingRoom'
 import MeetingDetail from './pages/Meetings/MeetingDetail'
 import ForumList from './pages/Forum/ForumList'
+import ForumPostDetail from './pages/Forum/ForumPostDetail'
+import CreateForumPost from './pages/Forum/CreateForumPost'
 import AssignmentList from './pages/Assignments/AssignmentList'
 import AssignmentDetail from './pages/Assignments/AssignmentDetail'
 import AssignmentForm from './pages/Assignments/AssignmentForm'
@@ -87,6 +89,9 @@ function App() {
       <Route path="/groups/:groupId/assignments/:id/edit" element={isAuthenticated ? <Layout><AssignmentForm /></Layout> : <Navigate to="/login" />} />
       <Route path="/groups/:groupId/assignments/:id" element={isAuthenticated ? <Layout><AssignmentDetail /></Layout> : <Navigate to="/login" />} />
       <Route path="/forum" element={isAuthenticated ? <Layout><ForumList /></Layout> : <Navigate to="/login" />} />
+      <Route path="/forum/create" element={isAuthenticated ? <Layout><CreateForumPost /></Layout> : <Navigate to="/login" />} />
+      <Route path="/forum/edit/:id" element={isAuthenticated ? <Layout><CreateForumPost /></Layout> : <Navigate to="/login" />} />
+      <Route path="/forum/posts/:id" element={isAuthenticated ? <Layout><ForumPostDetail /></Layout> : <Navigate to="/login" />} />
       <Route path="/calendar" element={isAuthenticated ? <Layout><Calendar /></Layout> : <Navigate to="/login" />} />
       <Route path="/notifications" element={isAuthenticated ? <Layout><Notifications /></Layout> : <Navigate to="/login" />} />
       <Route path="/admin/users" element={isAuthenticated ? <Layout><Users /></Layout> : <Navigate to="/login" />} />

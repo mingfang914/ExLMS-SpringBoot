@@ -19,6 +19,7 @@ public class ForumCommentResponse {
     private UUID id;
     private String authorName;
     private UUID authorId;
+    private String authorAvatarKey;
     private String content;
     private int upvoteCount;
     private boolean accepted;
@@ -31,6 +32,7 @@ public class ForumCommentResponse {
                 .id(comment.getId())
                 .authorName(comment.getAuthor().getFullName())
                 .authorId(comment.getAuthor().getId())
+                .authorAvatarKey(comment.getAuthor().getAvatarKey())
                 .content(comment.getContent())
                 .upvoteCount(comment.getUpvoteCount())
                 .accepted(comment.isAccepted())

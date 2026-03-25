@@ -25,14 +25,17 @@ public class CourseEnrollment extends BaseEntity {
     private User user;
 
     @Column(name = "progress_percent", nullable = false)
+    @Builder.Default
     private int progressPercent = 0;
 
     @Column(name = "is_completed", nullable = false)
+    @Builder.Default
     private boolean completed = false;
 
     @Column(name = "completed_at")
     private LocalDateTime completedAt;
 
     @Column(name = "enrolled_at", nullable = false)
+    @Builder.Default
     private LocalDateTime enrolledAt = LocalDateTime.now();
 }

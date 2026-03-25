@@ -30,14 +30,17 @@ public class ForumComment extends BaseEntity {
     private ForumComment parent;
 
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<ForumComment> children = new ArrayList<>();
 
     @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
 
     @Column(name = "upvote_count", nullable = false)
+    @Builder.Default
     private int upvoteCount = 0;
 
     @Column(name = "is_accepted", nullable = false)
+    @Builder.Default
     private boolean accepted = false;
 }

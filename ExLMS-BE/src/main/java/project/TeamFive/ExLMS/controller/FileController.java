@@ -28,6 +28,18 @@ public class FileController {
         return ResponseEntity.ok(url);
     }
 
+    @GetMapping("/download/{fileKey}")
+    public ResponseEntity<org.springframework.core.io.Resource> downloadFile(@PathVariable String fileKey) {
+        try {
+            io.minio.GetObjectResponse response = fileService.downloadFile(fileKey);
+            return ResponseEntity.ok()
+                    .header(org.springframework.http.HttpHeaders.CONTENT_TYPE, response.headers().get("Content-Type"))
+                    .body(new org.springframework.core.io.InputStreamResource(response));
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
+    }
+
     @PutMapping("/{fileKey}")
     public ResponseEntity<Map<String, String>> updateFile(@PathVariable String fileKey, @RequestParam("file") MultipartFile file) {
         String newKey = fileService.updateFile(fileKey, file);

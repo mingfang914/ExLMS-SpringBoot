@@ -19,11 +19,16 @@ public class CreateAssignmentRequest {
     private String title;
     private String description;
     private UUID courseId;
+    @Builder.Default
     private int maxScore = 100;
     private LocalDateTime dueAt;
+    @Builder.Default
     private Assignment.SubmissionType submissionType = Assignment.SubmissionType.FILE;
     private String allowedFileTypes;
+    @Builder.Default
     private int maxFileSizeMb = 50;
+    @Builder.Default
     private boolean allowLate = false;
+    @Builder.Default
     private int latePenaltyPercent = 0;
 }

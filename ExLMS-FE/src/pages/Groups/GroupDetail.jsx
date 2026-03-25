@@ -47,6 +47,7 @@ import { format } from 'date-fns'
 import { vi } from 'date-fns/locale'
 
 import GroupMembers from './components/GroupMembers'
+import GroupFeed from './components/GroupFeed'
 
 const GroupDetail = () => {
   const { id } = useParams()
@@ -527,9 +528,13 @@ const GroupDetail = () => {
 
         {/* Placeholder for other tabs */}
         {activeTab === 4 && (
-          <Paper sx={{ p: 5, textAlign: 'center' }}>
-            <Typography variant="h6" color="text.secondary">This feature is coming soon.</Typography>
-          </Paper>
+          <GroupFeed 
+            groupId={id} 
+            currentUserRole={group.currentUserRole}
+            groupCourses={courses}
+            groupAssignments={assignments}
+            groupMeetings={meetings}
+          />
         )}
 
         {activeTab === 5 && (

@@ -166,11 +166,30 @@ public class GroupFeedService {
                 .build();
 
         GroupFeedComment savedComment = feedCommentRepository.save(comment);
+        
+        // Fix for immediate response date if auditing hasn't kicked in yet
+        if (savedComment.getCreatedAt() == null) {
+            savedComment.setCreatedAt(java.time.LocalDateTime.now());
+        }
 
         post.setCommentCount(post.getCommentCount() + 1);
         feedPostRepository.save(post);
 
         return mapToCommentResponse(savedComment);
+    }
+
+    @Transactional
+    public GroupCommentResponse updateComment(UUID commentId, GroupCommentRequest request) {
+        User currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        GroupFeedComment comment = feedCommentRepository.findById(commentId)
+                .orElseThrow(() -> new RuntimeException("Comment not found"));
+
+        if (!comment.getAuthor().getId().equals(currentUser.getId())) {
+            throw new RuntimeException("Chỉ người tạo bình luận mới có quyền sửa!");
+        }
+
+        comment.setContent(request.getContent());
+        return mapToCommentResponse(feedCommentRepository.save(comment));
     }
 
     @Transactional
@@ -246,12 +265,17 @@ public class GroupFeedService {
     }
 
     private GroupFeedPostResponse mapToResponse(GroupFeedPost post) {
+        String role = groupMemberRepository.findByGroup_IdAndUser_Id(post.getGroup().getId(), post.getAuthor().getId())
+                .map(GroupMember::getRole)
+                .orElse("member");
+
         return GroupFeedPostResponse.builder()
                 .id(post.getId())
                 .groupId(post.getGroup().getId())
                 .authorId(post.getAuthor().getId())
                 .authorName(post.getAuthor().getFullName())
                 .authorAvatarKey(post.getAuthor().getAvatarKey())
+                .authorGroupRole(role)
                 .content(post.getContent())
                 .linkedEntityId(post.getLinkedEntityId())
                 .linkedEntityType(post.getLinkedEntityType())
@@ -264,12 +288,17 @@ public class GroupFeedService {
     }
 
     private GroupCommentResponse mapToCommentResponse(GroupFeedComment comment) {
+        String role = groupMemberRepository.findByGroup_IdAndUser_Id(comment.getFeedPost().getGroup().getId(), comment.getAuthor().getId())
+                .map(GroupMember::getRole)
+                .orElse("member");
+
         return GroupCommentResponse.builder()
                 .id(comment.getId())
                 .postId(comment.getFeedPost().getId())
                 .authorId(comment.getAuthor().getId())
                 .authorName(comment.getAuthor().getFullName())
                 .authorAvatarKey(comment.getAuthor().getAvatarKey())
+                .authorGroupRole(role)
                 .content(comment.getContent())
                 .createdAt(comment.getCreatedAt())
                 .build();

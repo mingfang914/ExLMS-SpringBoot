@@ -38,6 +38,7 @@ public class CalendarEvent extends BaseEntity {
     private EventType eventType;
 
     @Column(nullable = false, length = 7)
+    @Builder.Default
     private String color = "#6366F1";
 
     @Column(name = "source_entity_id")
@@ -49,6 +50,7 @@ public class CalendarEvent extends BaseEntity {
     private SourceEntityType sourceEntityType;
 
     @Column(name = "is_personal", nullable = false)
+    @Builder.Default
     private boolean personal = false;
 
     @Column(name = "reminder_at")

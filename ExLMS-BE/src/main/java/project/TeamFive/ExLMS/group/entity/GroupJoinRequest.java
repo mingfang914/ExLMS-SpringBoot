@@ -39,6 +39,7 @@ public class GroupJoinRequest {
     private String message;
 
     @Column(nullable = false)
+    @Builder.Default
     private String status = "PENDING"; // PENDING, APPROVED, REJECTED
 
     @ManyToOne(fetch = FetchType.LAZY)

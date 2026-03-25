@@ -30,6 +30,7 @@ public class ForumVote extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "vote_type", nullable = false)
+    @Builder.Default
     private VoteType voteType = VoteType.UPVOTE;
 
     public enum TargetType {

@@ -66,6 +66,14 @@ public class GroupFeedController {
         return ResponseEntity.ok(feedService.addComment(postId, request));
     }
 
+    @PutMapping("/comments/{commentId}")
+    public ResponseEntity<GroupCommentResponse> updateComment(
+            @PathVariable UUID groupId,
+            @PathVariable UUID commentId,
+            @RequestBody GroupCommentRequest request) {
+        return ResponseEntity.ok(feedService.updateComment(commentId, request));
+    }
+
     @DeleteMapping("/comments/{commentId}")
     public ResponseEntity<String> deleteComment(
             @PathVariable UUID groupId,

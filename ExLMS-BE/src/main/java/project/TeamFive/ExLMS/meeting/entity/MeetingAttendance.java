@@ -25,14 +25,17 @@ public class MeetingAttendance extends BaseEntity {
     private User user;
 
     @Column(name = "joined_at", nullable = false)
+    @Builder.Default
     private LocalDateTime joinedAt = LocalDateTime.now();
 
     @Column(name = "left_at")
     private LocalDateTime leftAt;
 
     @Column(name = "duration_sec", nullable = false)
+    @Builder.Default
     private int durationSec = 0;
 
     @Column(name = "is_present", nullable = false)
+    @Builder.Default
     private boolean present = true;
 }

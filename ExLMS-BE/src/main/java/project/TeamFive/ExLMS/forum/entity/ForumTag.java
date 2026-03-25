@@ -5,7 +5,7 @@ import lombok.*;
 import project.TeamFive.ExLMS.entity.BaseEntity;
 import project.TeamFive.ExLMS.user.entity.User;
 
-import java.util.UUID;
+
 
 @Entity
 @Table(name = "forum_tags")
@@ -26,9 +26,11 @@ public class ForumTag extends BaseEntity {
     private String description;
 
     @Column(nullable = false, length = 7)
+    @Builder.Default
     private String color = "#6366F1";
-
+    
     @Column(name = "post_count", nullable = false)
+    @Builder.Default
     private int postCount = 0;
 
     @ManyToOne(fetch = FetchType.LAZY)

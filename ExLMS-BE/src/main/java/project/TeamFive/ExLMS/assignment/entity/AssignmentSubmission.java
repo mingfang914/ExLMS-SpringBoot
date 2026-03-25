@@ -26,6 +26,7 @@ public class AssignmentSubmission extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "submission_type", nullable = false)
+    @Builder.Default
     private Assignment.SubmissionType submissionType = Assignment.SubmissionType.FILE;
 
     @Column(name = "text_content", columnDefinition = "LONGTEXT")
@@ -44,11 +45,14 @@ public class AssignmentSubmission extends BaseEntity {
     private String externalUrl;
 
     @Column(name = "is_late", nullable = false)
+    @Builder.Default
     private boolean late = false;
 
     @Column(name = "attempt_number", nullable = false)
+    @Builder.Default
     private int attemptNumber = 1;
 
     @Column(name = "submitted_at", nullable = false)
+    @Builder.Default
     private LocalDateTime submittedAt = LocalDateTime.now();
 }

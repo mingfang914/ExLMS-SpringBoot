@@ -21,5 +21,6 @@ public class MeetingPollOption extends BaseEntity {
     private String label;
 
     @Column(name = "vote_count", nullable = false)
+    @Builder.Default
     private int voteCount = 0;
 }

@@ -32,5 +32,6 @@ public class QuizResponse extends BaseEntity {
     private Boolean correct;
 
     @Column(name = "points_earned", nullable = false)
+    @Builder.Default
     private int pointsEarned = 0;
 }

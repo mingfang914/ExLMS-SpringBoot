@@ -21,8 +21,10 @@ public class QuizAnswer extends BaseEntity {
     private String content;
 
     @Column(name = "is_correct", nullable = false)
+    @Builder.Default
     private boolean correct = false;
 
     @Column(name = "order_index", nullable = false)
+    @Builder.Default
     private int orderIndex = 0;
 }

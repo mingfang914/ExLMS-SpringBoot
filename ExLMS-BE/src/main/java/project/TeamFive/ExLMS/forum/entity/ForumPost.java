@@ -30,18 +30,23 @@ public class ForumPost extends BaseEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
+    @Builder.Default
     private PostStatus status = PostStatus.PUBLISHED;
 
     @Column(name = "view_count", nullable = false)
+    @Builder.Default
     private int viewCount = 0;
 
     @Column(name = "upvote_count", nullable = false)
+    @Builder.Default
     private int upvoteCount = 0;
 
     @Column(name = "is_pinned", nullable = false)
+    @Builder.Default
     private boolean pinned = false;
 
     @Column(name = "is_closed", nullable = false)
+    @Builder.Default
     private boolean closed = false;
 
     @Column(name = "edited_at")
@@ -53,6 +58,7 @@ public class ForumPost extends BaseEntity {
         joinColumns = @JoinColumn(name = "post_id"),
         inverseJoinColumns = @JoinColumn(name = "tag_id")
     )
+    @Builder.Default
     private Set<ForumTag> tags = new HashSet<>();
 
     public enum PostStatus {

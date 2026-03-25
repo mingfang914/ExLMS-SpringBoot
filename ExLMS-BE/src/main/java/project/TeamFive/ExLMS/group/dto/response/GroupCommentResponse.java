@@ -18,5 +18,6 @@ public class GroupCommentResponse {
     private String authorName;
     private String authorAvatarKey;
     private String content;
+    private String authorGroupRole;
     private LocalDateTime createdAt;
 }

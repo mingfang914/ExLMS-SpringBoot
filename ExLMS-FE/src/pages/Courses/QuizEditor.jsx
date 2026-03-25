@@ -123,7 +123,7 @@ const QuizEditor = () => {
           points: q.points || 1,
           explanation: q.explanation,
           orderIndex: i,
-          answers: q.answers.map((a, j) => ({ content: a.content, isCorrect: a.isCorrect, orderIndex: j }))
+          answers: q.answers.map((a, j) => ({ content: a.content, correct: a.isCorrect, orderIndex: j }))
         }))
       }
       if (isEdit) {
